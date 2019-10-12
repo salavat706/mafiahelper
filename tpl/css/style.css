@@ -129,3 +129,8 @@ body{
 .killBtn {
     display: none;
 }
+
+.role {
+    margin-bottom: 40px;
+    width: 100%;
+}

@@ -4,87 +4,19 @@ const maniac = 'maniac';
 const cop = 'cop';
 const slut = 'slut';
 
-class Role {
-	constructor(obj) {
-		this.name = obj.name;
-		this.sysnick = obj.sysnick;
-	}
-}
-
-function getRoles() {
-	return [
-		{
-			name: 'Мафия',
-			sysnick: mafia
-		},
-		{
-			name: 'Доктор',
-			sysnick: doctor
-		},
-		{
-			name: 'Манъяк',
-			sysnick: maniac
-		},
-		{
-			name: 'Комиссар',
-			sysnick: cop
-		},
-		{
-			name: 'Любовница',
-			sysnick: slut
-		}
-	];
-}
-
-class Player {
-	//sysnick mafia, doc 
-	constructor(name, role) {
-		this.name = name;
-		this.role = role;
-		this.guests = [];
-
-		this.isDead = false;
+function getRoles(sysnick) {
+	var roles = {
+		mafia: new Role('Мафия', mafia),
+		doctor: new Role('Доктор', doctor),
+		maniac: new Role('Манъяк', maniac),
+		cop: new Role('Комиссар', cop),
+		slut: new Role('Любовница', slut)
 	}
 
-	addGuest(role) {
-		return this.guests.push(role);
-	}
+	if(sysnick)
+		return roles[sysnick];
 
-	getRoleSysnick() {
-		return this.role.sysnick;
-	}
-
-	getRoleName() {
-		return this.role.name;
-	}
-
-	kill() {
-		this.isDead = true;
-	}
-
-	isRole(role) {
-		return this.role.sysnick == role.sysnick;
-	}
-
-	isKilled() {
-		return this.guests.includes(mafia);
-	}
-
-	isFucked() {
-		return this.guests.includes(slut);
-	}
-
-	isHealed() {
-		return this.guests.includes(doctor);
-	}
-
-	isManiac() {
-		return this.guests.includes(maniac);
-	}
-
-	isChecke() {
-		return this.guests.includes(cop)
-	}
+	return roles;
 }
 
 $(document).ready(function () {
@@ -102,16 +34,17 @@ $(document).ready(function () {
 	var livedRoles;
 
 	//комбобокс с ролями
-	getRoles().forEach(role => {
+	for(var idx in roles){
+		var role = roles[idx];
 		var html = '<option value="'+role.sysnick+'">'+role.name+'</option>';
 		$('.role').append(html);
-	});
+	};
 
 	$(".next").click(function () {
 		var name = $(".name").val();
 		var roleSysnick = $(".role").val();
 		var roleName = $('.role option:selected').text()
-		var roleObj = new Role({ name: roleName, sysnick: roleSysnick });
+		var roleObj = new Role(roleName, roleSysnick );
 		players.push(new Player(name, roleObj));
 
 		$(".name").val("");
