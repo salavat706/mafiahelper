@@ -11,6 +11,10 @@ class Player {
 		return this.guests.push(role);
 	}
 
+	getRole() {
+		return this.role;
+	}
+
 	getRoleSysnick() {
 		return this.role.sysnick;
 	}

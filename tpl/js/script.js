@@ -4,6 +4,7 @@ const maniac = 'maniac';
 const cop = 'cop';
 const slut = 'slut';
 
+//получить все роли либо одну роль
 function getRoles(sysnick) {
 	var roles = {
 		mafia: new Role('Мафия', mafia),
@@ -27,11 +28,13 @@ $(document).ready(function () {
 	//все роли
 	var roles = getRoles();
 
-	//чей ход?
-	var currentRoleIdx = 0;
+	//группы игроков :: мафии, шерифы, доктора
+	var groups = [];
 
-	//Живые роли
-	var livedRoles;
+	//чей ход?
+	var currentGroup;
+	var currentRole;
+	var isDay = false;
 
 	//комбобокс с ролями
 	for(var idx in roles){
@@ -40,6 +43,7 @@ $(document).ready(function () {
 		$('.role').append(html);
 	};
 
+	//ВБИТЬ
 	$(".next").click(function () {
 		var name = $(".name").val();
 		var roleSysnick = $(".role").val();
@@ -51,7 +55,7 @@ $(document).ready(function () {
 		$(".role").val("");
 	});
 
-	//
+	//КОНЧИТЬ
 	$(".cum").click(function () {
 		$(".start_form").hide();
 
@@ -65,13 +69,18 @@ $(document).ready(function () {
 
 	});
 
-	//кнопка перехода к следующей ночи
+	//СТАРТ
 	$(".start").click(function (e) {
 		$(".player_list").hide();
 
-		livedRoles = getLivedRoles(players);
+		groups = getLivedRoles(players);
+		currentGroup = groups.shift();
+		currentRole = currentGroup[0].getRole();
 
-		drawPlayerCards(players,livedRoles[currentRoleIdx]);
+
+		drawPlayerCards(players);
+
+		updatePlayerCards(players, currentRole);
 
 		$(".main_table").show();
 	});
@@ -79,35 +88,36 @@ $(document).ready(function () {
 	//клик по карте игрока
 	$('body').on('click', '.player_card', function () {
 		$(".player_card").removeClass("check");
-		$(this).addClass("check");
-		console.log(getLivedRoles(players));
+		var el = $(this);
+		if(!el.hasClass('disabled') && !el.hasClass('dead'))
+			el.addClass("check");
 	});
 
-	//Ночь: переход к следующей роли
+	//ДАЛЕЕ
 	$(".next_players").click(function (e) {
-		var idx = getCheckedIdx(players);
-		players[idx].addGuest(livedRoles[currentRoleIdx]);
-		currentRoleIdx++;
+		var idx = getCheckedIdx();
+		players[idx].addGuest(currentRole);
 
-		var nextRole = livedRoles[currentRoleIdx]
-		if(nextRole)
-			drawPlayerCards(players,nextRole);
+		currentGroup = groups.shift();
+		if(currentGroup) {
+			currentRole = currentGroup[0].getRole();
+			updatePlayerCards(players,currentRole);
+		}
 		else {
 			alert('Дневное голосование');
-			drawPlayerCards(players);
-			currentRoleIdx = 0;
+			updatePlayerCards(players);
 			$('.killBtn').show();
 			$('.next_players').hide();
 			//todo итог ночи
-			//ГОЛОСОВАНИЕ
 		}
 	});
 
+	//УБИТЬ
 	$('.killBtn').click(function() {
-		var idx = getCheckedIdx(players);
+		var idx = getCheckedIdx();
 		players[idx].kill();
-		livedRoles = getLivedRoles(players);
-		drawPlayerCards(players, livedRoles[currentRoleIdx]);
+		groups = getLivedRoles(players);
+		updatePlayerCards(players, currentRole);
 		$('.killBtn').hide();
 		
 		$('.next_players').show();
@@ -115,6 +125,12 @@ $(document).ready(function () {
 	})
 });
 
+//логика после ночи
+function afterNight() {
+
+}
+
+//получить индекс выделенной карточки
 function getCheckedIdx(players) {
 	var idx = $(".player_card.check").attr("idx");
 	if(!idx) {
@@ -124,28 +140,50 @@ function getCheckedIdx(players) {
 	return idx;
 }
 
+//живые роли
 function getLivedRoles(players) {
-	var result = [];
+	var groups = {};
 	players.forEach(player => {
 		if(player.isDead) return;
-
-		if(result.includes(player.role)) return;
-		result.push(player.role);
+		var roleSysnick = player.getRoleSysnick();;
+		if(groups[roleSysnick]) {
+			groups[roleSysnick].push(player);
+		} else {
+			groups[roleSysnick] = [ player ];
+		}
 	});
-	return result;
+
+	var resultArr = [];
+	for(var sysnick in groups) {
+		resultArr.push(groups[sysnick]);
+	}
+
+	//группа.игрок.роль
+	return resultArr;
 }
 
-function drawPlayerCards(players,currentRole) {
-
-	var labelText = currentRole ? 'Просыпается ' + currentRole.name : '';
-	$('.currentRole').text(labelText);
-
+//нарисовать карточки игроков
+function drawPlayerCards(players) {
 	$(".player_grid").empty();
 	players.forEach(function (player, i) {
-		if(player.isDead) return;
-		if(currentRole && player.isRole(currentRole)) return;
-
 		var tmp = '<div class="player_card" idx="' + i + '">' + player.name + ' - ' + player.getRoleName() + '</div>';
 		$(".player_grid").prepend(tmp);
+	});
+}
+
+//обновить стили карточек игроков
+function updatePlayerCards(players,currentRole) {
+	var labelText = currentRole ? 'Просыпается ' + currentRole.name : 'Дневное голосование';
+	$('.currentRole').text(labelText);
+
+	players.forEach(function (player, i) {
+		var el = $('[idx=' + i + ']');
+		el.removeClass();
+		el.addClass('player_card');
+		if(player.isDead) {
+			el.addClass('dead');
+		} else if (currentRole && player.isRole(currentRole)) {
+			el.addClass('disabled');
+		}
 	});
 }

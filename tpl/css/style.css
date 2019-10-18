@@ -120,6 +120,14 @@ body{
     background-color: aquamarine;
 }
 
+.disabled {
+    background-color: silver;
+}
+
+.dead {
+    background-color: tomato;
+}
+
 .next_players, .killBtn
 {
     margin: 30px auto 0;
